@@ -1,0 +1,78 @@
+### NoticePage
+            bool admin = Session.IsAdmin;
+            lblPageTitle.Text = admin ? "公告管理" : "小区公告";
+            lblPageDescription.Text = admin ? "发布停水停电、社区活动等通知" : "查阅物业发布的最新通知";
+            btnAdd.Visible = admin;
+            btnEdit.Visible = admin;
+            btnDelete.Visible = admin;
+            btnView.Visible = !admin;
+
+### RepairPage
+            bool admin = Session.IsAdmin;
+            lblPageTitle.Text = admin ? "报修管理" : "我的报修";
+            lblPageDescription.Text = admin ? "受理报修工单，派单并登记完工情况" : "在线提交报修，随时查看处理进度";
+            lblKeyword.Visible = admin;
+            txtKeyword.Visible = admin;
+            btnReset.Visible = admin;
+            btnAdd.Visible = admin;
+            btnHandle.Visible = admin;
+            btnDelete.Visible = admin;
+            lblContent.Visible = !admin;
+            txtContent.Visible = !admin;
+            btnSubmit.Visible = !admin;
+            btnCancel.Visible = !admin;
+            if (admin)
+            {
+                pnlRoot.RowStyles[3].Height = 0F;
+            }
+            if (!admin)
+            {
+                pnlRoot.RowStyles[2].Height = 0F;
+            }
+
+### FeePage
+            bool admin = Session.IsAdmin;
+            lblPageTitle.Text = admin ? "收费管理" : "我的费用";
+            lblPageDescription.Text = admin ? "登记各项费用并核销，随时掌握收缴情况" : "查询各项费用的缴纳情况";
+            lblKeyword.Visible = admin;
+            txtKeyword.Visible = admin;
+            lblMonth.Visible = admin;
+            txtMonth.Visible = admin;
+            btnAdd.Visible = admin;
+            btnPay.Visible = admin;
+            btnBatch.Visible = admin;
+            btnDelete.Visible = admin;
+
+### ParkingPage
+            bool admin = Session.IsAdmin;
+            lblPageTitle.Text = admin ? "车位管理" : "我的车位";
+            lblPageDescription.Text = admin ? "维护车位档案与使用情况" : "查看绑定的车位与车牌信息";
+            lblKeyword.Visible = admin;
+            txtKeyword.Visible = admin;
+            lblStatus.Visible = admin;
+            cboStatus.Visible = admin;
+            btnSearch.Visible = admin;
+            btnReset.Visible = admin;
+            btnAdd.Visible = admin;
+            btnEdit.Visible = admin;
+            btnDelete.Visible = admin;
+            btnRefresh.Visible = !admin;
+
+### FeedbackPage
+            bool admin = Session.IsAdmin;
+            lblPageTitle.Text = admin ? "反馈管理" : "投诉建议";
+            lblPageDescription.Text = admin ? "查看业主的投诉与建议并回复" : "向物业提交投诉或建议，并查看回复";
+            lblKeyword.Visible = admin;
+            txtKeyword.Visible = admin;
+            btnReply.Visible = admin;
+            btnDelete.Visible = admin;
+            btnAdd.Visible = !admin;
+            if (!admin)
+            {
+                lblType.Location = new Point(24, 12);
+                cboType.Location = new Point(70, 12);
+                lblStatus.Location = new Point(186, 12);
+                cboStatus.Location = new Point(264, 12);
+                btnSearch.Location = new Point(390, 12);
+                btnReset.Location = new Point(474, 12);
+            }
