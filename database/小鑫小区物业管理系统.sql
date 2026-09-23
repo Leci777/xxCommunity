@@ -1,43 +1,10 @@
-/*==============================================================================
-  小鑫小区物业管理系统 - 数据库建库脚本
-  ----------------------------------------------------------------------------
-  数据库名 : XiaoxinCommunityDB
-  适用版本 : SQL Server 2005 / 2008 / 2012 / 2014 / 2016 / 2017 / 2019 / 2022
-             以及 Azure SQL Database（未使用任何高版本专有语法）
-  ----------------------------------------------------------------------------
-  使用方法 :
-     1. 打开 SSMS（SQL Server Management Studio），连接到你的数据库实例；
-     2. 直接打开本文件，按 F5 执行（或点击“执行”按钮）；
-     3. 脚本会自动完成：建库 -> 建表 -> 建索引/外键 -> 灌入演示数据。
-     4. 若想让脚本删表重建，请把【第 2 步】的 @RebuildDatabase 改为 1 后重新执行
-        （注意：重建会清空原有数据）。
-
-  语法兼容性说明（为什么不挑版本也能跑） :
-     * 不使用 DROP TABLE IF EXISTS（2016+）        -> 改用 OBJECT_ID() 判断
-     * 不使用 DATEDIFF_BIG / IIF / CONCAT / FORMAT -> 改用基础函数
-     * 不使用 DATE / TIME / DATETIME2 等新类型     -> 统一用 DATETIME
-     * 不使用 SEQUENCE / MERGE / 时态表 / JSON     -> 全部为基础 T-SQL
-     * 不使用 OFFSET FETCH / STRING_AGG            -> 分页在程序端完成
-
-  默认登录账号（密码在库中以 MD5 大写十六进制保存） :
-     管理员 : admin          密码 admin123
-     业主   : 13800000001    密码 123456
-     业主   : 13800000002    密码 123456
-     （其余业主账号见 tb_SysUser 表，登录名即业主手机号，密码均为 123456）
-==============================================================================*/
 
 SET NOCOUNT ON;
 GO
 
-/*------------------------------------------------------------------------------
-  第 0 步：参数
-------------------------------------------------------------------------------*/
 DECLARE @DatabaseName NVARCHAR(128);
 SET @DatabaseName = N'XiaoxinCommunityDB';
 
-/*------------------------------------------------------------------------------
-  第 1 步：创建数据库（已存在则跳过）
-------------------------------------------------------------------------------*/
 IF NOT EXISTS (SELECT 1 FROM sys.databases WHERE name = @DatabaseName)
 BEGIN
     PRINT N'>> 正在创建数据库 ' + @DatabaseName + N' ...';
@@ -55,12 +22,8 @@ GO
 PRINT N'>> 当前数据库：' + DB_NAME();
 GO
 
-/*------------------------------------------------------------------------------
-  第 2 步：删除旧表（仅在需要重建时）
-  注意：删除顺序必须“先子表、后主表”，否则外键会阻止删除。
-------------------------------------------------------------------------------*/
 DECLARE @RebuildDatabase INT;
-SET @RebuildDatabase = 0;              -- ← 需要删表重建时改成 1（会清空原有数据）
+SET @RebuildDatabase = 0;              
 
 IF @RebuildDatabase = 1
 BEGIN
@@ -79,11 +42,7 @@ BEGIN
 END
 GO
 
-/*------------------------------------------------------------------------------
-  第 3 步：建表
-------------------------------------------------------------------------------*/
 
-/* 3.1 小区基本信息（整库只有一行，属配置型数据） */
 IF OBJECT_ID(N'dbo.tb_Community', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.tb_Community
@@ -91,14 +50,14 @@ BEGIN
         CommunityId      INT             IDENTITY(1,1) NOT NULL,
         CommunityName    NVARCHAR(100)   NOT NULL,
         Address          NVARCHAR(200)   NULL,
-        Area             DECIMAL(18,2)   NULL,   -- 占地面积（平方米）
-        BuildingCount    INT             NULL,   -- 楼栋数量
-        HouseholdCount   INT             NULL,   -- 住户数量
-        GreenRate        NVARCHAR(20)    NULL,   -- 绿化率
-        ParkingCount     INT             NULL,   -- 车位数量
-        PropertyCompany  NVARCHAR(100)   NULL,   -- 物业公司
-        PropertyFeeRate  NVARCHAR(50)    NULL,   -- 物业费标准
-        Manager          NVARCHAR(50)    NULL,   -- 物业负责人
+        Area             DECIMAL(18,2)   NULL,   
+        BuildingCount    INT             NULL,   
+        HouseholdCount   INT             NULL,   
+        GreenRate        NVARCHAR(20)    NULL,   
+        ParkingCount     INT             NULL,   
+        PropertyCompany  NVARCHAR(100)   NULL,   
+        PropertyFeeRate  NVARCHAR(50)    NULL,   
+        Manager          NVARCHAR(50)    NULL,   
         ContactPhone     NVARCHAR(50)    NULL,
         Email            NVARCHAR(100)   NULL,
         Remark           NVARCHAR(500)   NULL,
@@ -109,15 +68,14 @@ BEGIN
 END
 GO
 
-/* 3.2 楼栋 */
 IF OBJECT_ID(N'dbo.tb_Building', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.tb_Building
     (
         BuildingId    INT            IDENTITY(1,1) NOT NULL,
-        BuildingName  NVARCHAR(50)   NOT NULL,   -- 例如：1栋
-        UnitCount     INT            NULL,       -- 单元数
-        FloorCount    INT            NULL,       -- 层数
+        BuildingName  NVARCHAR(50)   NOT NULL,   
+        UnitCount     INT            NULL,       
+        FloorCount    INT            NULL,       
         Remark        NVARCHAR(200)  NULL,
         CreateTime    DATETIME       NULL,
         CONSTRAINT PK_tb_Building PRIMARY KEY (BuildingId)
@@ -126,20 +84,19 @@ BEGIN
 END
 GO
 
-/* 3.3 住户档案（业主） */
 IF OBJECT_ID(N'dbo.tb_Household', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.tb_Household
     (
         HouseholdId   INT            IDENTITY(1,1) NOT NULL,
         OwnerName     NVARCHAR(50)   NOT NULL,
-        Gender        NVARCHAR(4)    NULL,       -- 男 / 女
+        Gender        NVARCHAR(4)    NULL,       
         Phone         NVARCHAR(20)   NULL,
         IdCard        NVARCHAR(30)   NULL,
         BuildingId    INT            NULL,
-        RoomNo        NVARCHAR(50)   NULL,       -- 门牌号，例如：1栋1单元101
-        Area          DECIMAL(18,2)  NULL,       -- 建筑面积
-        FamilyCount   INT            NULL,       -- 家庭人数
+        RoomNo        NVARCHAR(50)   NULL,       
+        Area          DECIMAL(18,2)  NULL,       
+        FamilyCount   INT            NULL,       
         MoveInDate    DATETIME       NULL,
         Remark        NVARCHAR(500)  NULL,
         CreateTime    DATETIME       NULL,
@@ -149,19 +106,18 @@ BEGIN
 END
 GO
 
-/* 3.4 车位 */
 IF OBJECT_ID(N'dbo.tb_Parking', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.tb_Parking
     (
         ParkId       INT            IDENTITY(1,1) NOT NULL,
-        ParkNo       NVARCHAR(30)   NOT NULL,    -- 车位编号，例如：A-001
-        ParkArea     NVARCHAR(50)   NULL,        -- 区域，例如：地下车库 / 地面停车区
-        ParkType     NVARCHAR(20)   NULL,        -- 地下 / 地上
-        HouseholdId  INT            NULL,        -- 使用住户，NULL 表示未分配
-        CarNo        NVARCHAR(20)   NULL,        -- 车牌号
-        Status       NVARCHAR(20)   NULL,        -- 空闲 / 已租 / 已售
-        RentFee      DECIMAL(18,2)  NULL,        -- 月租金
+        ParkNo       NVARCHAR(30)   NOT NULL,   
+        ParkArea     NVARCHAR(50)   NULL,       
+        ParkType     NVARCHAR(20)   NULL,        
+        HouseholdId  INT            NULL,        
+        CarNo        NVARCHAR(20)   NULL,        
+        Status       NVARCHAR(20)   NULL,        
+        RentFee      DECIMAL(18,2)  NULL,        
         Remark       NVARCHAR(200)  NULL,
         CreateTime   DATETIME       NULL,
         CONSTRAINT PK_tb_Parking PRIMARY KEY (ParkId)
@@ -170,20 +126,19 @@ BEGIN
 END
 GO
 
-/* 3.5 系统用户（管理员 + 业主登录账号） */
 IF OBJECT_ID(N'dbo.tb_SysUser', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.tb_SysUser
     (
         UserId       INT            IDENTITY(1,1) NOT NULL,
-        LoginName    NVARCHAR(50)   NOT NULL,    -- 管理员为 admin，业主为手机号
-        Password     NVARCHAR(50)   NOT NULL,    -- MD5 大写十六进制
+        LoginName    NVARCHAR(50)   NOT NULL,    
+        Password     NVARCHAR(50)   NOT NULL,   
         RealName     NVARCHAR(50)   NULL,
         Phone        NVARCHAR(20)   NULL,
         Email        NVARCHAR(100)  NULL,
-        Role         NVARCHAR(20)   NOT NULL,    -- 管理员 / 业主
-        HouseholdId  INT            NULL,        -- 业主关联的住户档案
-        Status       INT            NOT NULL,    -- 1 启用 / 0 停用
+        Role         NVARCHAR(20)   NOT NULL,    
+        HouseholdId  INT            NULL,        
+        Status       INT            NOT NULL,    
         CreateTime   DATETIME       NULL,
         CONSTRAINT PK_tb_SysUser PRIMARY KEY (UserId)
     );
@@ -191,37 +146,35 @@ BEGIN
 END
 GO
 
-/* 3.6 公告 */
 IF OBJECT_ID(N'dbo.tb_Notice', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.tb_Notice
     (
         NoticeId     INT             IDENTITY(1,1) NOT NULL,
         Title        NVARCHAR(200)   NOT NULL,
-        Category     NVARCHAR(20)    NULL,       -- 通知 / 停水 / 停电 / 活动
+        Category     NVARCHAR(20)    NULL,       
         Content      NVARCHAR(4000)  NULL,
         PublishUser  NVARCHAR(50)    NULL,
         PublishTime  DATETIME        NULL,
-        IsTop        INT             NULL,       -- 1 置顶 / 0 普通
+        IsTop        INT             NULL,       
         CONSTRAINT PK_tb_Notice PRIMARY KEY (NoticeId)
     );
     PRINT N'>> 已创建 tb_Notice（公告）';
 END
 GO
 
-/* 3.7 报修工单（对应旧版 tb_Report，字段做了规范化扩展） */
 IF OBJECT_ID(N'dbo.tb_Repair', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.tb_Repair
     (
         RepairId     INT             IDENTITY(1,1) NOT NULL,
-        HouseholdId  INT             NULL,       -- 发起报修的住户
-        Content      NVARCHAR(500)   NULL,       -- 报修问题
-        ReportDate   DATETIME        NULL,       -- 上报时间
-        SolveDate    DATETIME        NULL,       -- 维修时间
-        RepairMan    NVARCHAR(50)    NULL,       -- 维修人
-        Fee          DECIMAL(18,2)   NULL,       -- 维修费用
-        Status       NVARCHAR(20)    NULL,       -- 待处理 / 处理中 / 已完成
+        HouseholdId  INT             NULL,      
+        Content      NVARCHAR(500)   NULL,    
+        ReportDate   DATETIME        NULL,     
+        SolveDate    DATETIME        NULL,    
+        RepairMan    NVARCHAR(50)    NULL,     
+        Fee          DECIMAL(18,2)   NULL,       
+        Status       NVARCHAR(20)    NULL,       
         Remark       NVARCHAR(500)   NULL,
         CreateTime   DATETIME        NULL,
         CONSTRAINT PK_tb_Repair PRIMARY KEY (RepairId)
@@ -230,19 +183,18 @@ BEGIN
 END
 GO
 
-/* 3.8 收费记录 */
 IF OBJECT_ID(N'dbo.tb_Fee', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.tb_Fee
     (
         FeeId       INT             IDENTITY(1,1) NOT NULL,
         HouseholdId INT             NULL,
-        FeeType     NVARCHAR(20)    NULL,        -- 物业费 / 水费 / 电费 / 停车费
-        FeeMonth    NVARCHAR(20)    NULL,        -- 费用所属月份，例如：2026-09
+        FeeType     NVARCHAR(20)    NULL,      
+        FeeMonth    NVARCHAR(20)    NULL,      
         Amount      DECIMAL(18,2)   NULL,
-        PayStatus   NVARCHAR(10)    NULL,        -- 未缴 / 已缴
+        PayStatus   NVARCHAR(10)    NULL,     
         PayDate     DATETIME        NULL,
-        Operator    NVARCHAR(50)    NULL,        -- 经办人
+        Operator    NVARCHAR(50)    NULL,       
         Remark      NVARCHAR(200)   NULL,
         CreateTime  DATETIME        NULL,
         CONSTRAINT PK_tb_Fee PRIMARY KEY (FeeId)
@@ -251,28 +203,26 @@ BEGIN
 END
 GO
 
-/* 3.9 投诉与建议 */
 IF OBJECT_ID(N'dbo.tb_Feedback', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.tb_Feedback
     (
         FeedbackId    INT             IDENTITY(1,1) NOT NULL,
         HouseholdId   INT             NULL,
-        FType         NVARCHAR(20)    NULL,      -- 投诉 / 建议
+        FType         NVARCHAR(20)    NULL,      
         Title         NVARCHAR(100)   NULL,
         Content       NVARCHAR(1000)  NULL,
         CreateTime    DATETIME        NULL,
         ReplyContent  NVARCHAR(1000)  NULL,
         ReplyUser     NVARCHAR(50)    NULL,
         ReplyTime     DATETIME        NULL,
-        Status        NVARCHAR(20)    NULL,      -- 待处理 / 已回复
+        Status        NVARCHAR(20)    NULL,      
         CONSTRAINT PK_tb_Feedback PRIMARY KEY (FeedbackId)
     );
     PRINT N'>> 已创建 tb_Feedback（投诉建议）';
 END
 GO
 
-/* 3.10 系统操作日志 */
 IF OBJECT_ID(N'dbo.tb_SysLog', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.tb_SysLog
@@ -288,11 +238,6 @@ BEGIN
 END
 GO
 
-/*------------------------------------------------------------------------------
-  第 4 步：索引与外键（用 OBJECT_ID / 系统视图判断，避免重复创建报错）
-------------------------------------------------------------------------------*/
-
-/* 4.1 普通索引 —— 只建在常用的查询列上 */
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_tb_Household_Phone'
                AND object_id = OBJECT_ID(N'dbo.tb_Household'))
     CREATE INDEX IX_tb_Household_Phone ON dbo.tb_Household (Phone);
@@ -314,7 +259,6 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_tb_Repair_Status'
 
 GO
 
-/* 4.2 外键 —— 用 sys.foreign_keys 判断，已存在则跳过 */
 IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_Household_Building')
     ALTER TABLE dbo.tb_Household
         ADD CONSTRAINT FK_Household_Building FOREIGN KEY (BuildingId)
@@ -351,13 +295,6 @@ IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_Feedback_Househo
             REFERENCES dbo.tb_Household (HouseholdId);
 GO
 
-/*------------------------------------------------------------------------------
-  第 5 步：演示数据
-  说明：主键是 IDENTITY，为了让外键能稳定对应，使用 SET IDENTITY_INSERT 显式插入。
-        同一会话内 IDENTITY_INSERT 只能对一张表开启，因此逐表开关。
-------------------------------------------------------------------------------*/
-
-/* 5.1 小区信息 */
 IF NOT EXISTS (SELECT 1 FROM dbo.tb_Community)
 BEGIN
     SET IDENTITY_INSERT dbo.tb_Community ON;
@@ -378,7 +315,6 @@ BEGIN
 END
 GO
 
-/* 5.2 楼栋 */
 IF NOT EXISTS (SELECT 1 FROM dbo.tb_Building)
 BEGIN
     SET IDENTITY_INSERT dbo.tb_Building ON;
@@ -398,7 +334,6 @@ BEGIN
 END
 GO
 
-/* 5.3 住户档案 */
 IF NOT EXISTS (SELECT 1 FROM dbo.tb_Household)
 BEGIN
     SET IDENTITY_INSERT dbo.tb_Household ON;
@@ -406,29 +341,28 @@ BEGIN
     INSERT INTO dbo.tb_Household
         (HouseholdId, OwnerName, Gender, Phone, IdCard, BuildingId, RoomNo,
          Area, FamilyCount, MoveInDate, Remark, CreateTime)
-    SELECT 1, N'张伟', N'男', N'13800000001', N'440301199001011234', 1, N'1栋1单元101', 126.50, 3, CONVERT(DATETIME, '2020-03-15', 120), N'业主委员会成员', CONVERT(DATETIME, '2020-03-15', 120)
-    UNION ALL SELECT 2, N'李娜', N'女', N'13800000002', N'440301199202022345', 1, N'1栋1单元102', 98.20, 2, CONVERT(DATETIME, '2020-04-02', 120), NULL, CONVERT(DATETIME, '2020-04-02', 120)
-    UNION ALL SELECT 3, N'王强', N'男', N'13800000003', N'440301198805053456', 1, N'1栋1单元201', 126.50, 4, CONVERT(DATETIME, '2020-05-11', 120), NULL, CONVERT(DATETIME, '2020-05-11', 120)
-    UNION ALL SELECT 4, N'刘敏', N'女', N'13800000004', N'440301199311114567', 2, N'2栋1单元301', 143.80, 3, CONVERT(DATETIME, '2020-06-20', 120), NULL, CONVERT(DATETIME, '2020-06-20', 120)
-    UNION ALL SELECT 5, N'陈晨', N'男', N'13800000005', N'440301199504045678', 2, N'2栋2单元502', 98.20, 2, CONVERT(DATETIME, '2020-07-08', 120), N'租户转业主', CONVERT(DATETIME, '2020-07-08', 120)
-    UNION ALL SELECT 6, N'赵磊', N'男', N'13800000006', N'440301198706066789', 3, N'3栋1单元601', 126.50, 5, CONVERT(DATETIME, '2020-08-19', 120), N'家中有老人，需留意电梯', CONVERT(DATETIME, '2020-08-19', 120)
-    UNION ALL SELECT 7, N'孙丽', N'女', N'13800000007', N'440301199007077890', 3, N'3栋2单元802', 143.80, 3, CONVERT(DATETIME, '2020-09-01', 120), NULL, CONVERT(DATETIME, '2020-09-01', 120)
-    UNION ALL SELECT 8, N'周杰', N'男', N'13800000008', N'440301199108088901', 4, N'4栋1单元1101', 98.20, 2, CONVERT(DATETIME, '2020-10-12', 120), NULL, CONVERT(DATETIME, '2020-10-12', 120)
-    UNION ALL SELECT 9, N'吴静', N'女', N'13800000009', N'440301199209099012', 4, N'4栋1单元1102', 126.50, 3, CONVERT(DATETIME, '2020-11-23', 120), NULL, CONVERT(DATETIME, '2020-11-23', 120)
-    UNION ALL SELECT 10, N'郑凯', N'男', N'13800000010', N'440301198510101123', 5, N'5栋1单元901', 143.80, 4, CONVERT(DATETIME, '2021-01-15', 120), NULL, CONVERT(DATETIME, '2021-01-15', 120)
-    UNION ALL SELECT 11, N'冯雪', N'女', N'13800000011', N'440301199411111234', 6, N'6栋1单元1503', 98.20, 2, CONVERT(DATETIME, '2021-03-06', 120), NULL, CONVERT(DATETIME, '2021-03-06', 120)
-    UNION ALL SELECT 12, N'韩磊', N'男', N'13800000012', N'440301198812121345', 6, N'6栋2单元1806', 126.50, 4, CONVERT(DATETIME, '2021-05-18', 120), NULL, CONVERT(DATETIME, '2021-05-18', 120)
-    UNION ALL SELECT 13, N'杨帆', N'男', N'13800000013', N'440301199601011456', 7, N'7栋1单元2201', 143.80, 3, CONVERT(DATETIME, '2021-07-29', 120), NULL, CONVERT(DATETIME, '2021-07-29', 120)
-    UNION ALL SELECT 14, N'许晴', N'女', N'13800000014', N'440301199702021567', 7, N'7栋3单元2402', 98.20, 1, CONVERT(DATETIME, '2021-09-09', 120), N'长期出差，报修请电话联系', CONVERT(DATETIME, '2021-09-09', 120)
-    UNION ALL SELECT 15, N'何军', N'男', N'13800000015', N'440301198403031678', 8, N'8栋1单元1201', 126.50, 4, CONVERT(DATETIME, '2021-11-11', 120), NULL, CONVERT(DATETIME, '2021-11-11', 120)
-    UNION ALL SELECT 16, N'邓丽', N'女', N'13800000016', N'440301199304041789', 8, N'8栋2单元1602', 143.80, 3, CONVERT(DATETIME, '2022-02-14', 120), NULL, CONVERT(DATETIME, '2022-02-14', 120);
+    SELECT 1, N'张伟', N'男', N'13800000001', N'500382198752145214', 1, N'1栋1单元101', 126.50, 3, CONVERT(DATETIME, '2020-03-15', 120), N'业主委员会成员', CONVERT(DATETIME, '2020-03-15', 120)
+    UNION ALL SELECT 2, N'李娜', N'女', N'13800000002', N'500382198752165428', 1, N'1栋1单元102', 98.20, 2, CONVERT(DATETIME, '2020-04-02', 120), NULL, CONVERT(DATETIME, '2020-04-02', 120)
+    UNION ALL SELECT 3, N'王强', N'男', N'13800000003', N'500382198752165466', 1, N'1栋1单元201', 126.50, 4, CONVERT(DATETIME, '2020-05-11', 120), NULL, CONVERT(DATETIME, '2020-05-11', 120)
+    UNION ALL SELECT 4, N'刘敏', N'女', N'13800000004', N'500382198752164653', 2, N'2栋1单元301', 143.80, 3, CONVERT(DATETIME, '2020-06-20', 120), NULL, CONVERT(DATETIME, '2020-06-20', 120)
+    UNION ALL SELECT 5, N'陈晨', N'男', N'13800000005', N'500382198752162346', 2, N'2栋2单元502', 98.20, 2, CONVERT(DATETIME, '2020-07-08', 120), N'租户转业主', CONVERT(DATETIME, '2020-07-08', 120)
+    UNION ALL SELECT 6, N'赵磊', N'男', N'13800000006', N'500382198752168564', 3, N'3栋1单元601', 126.50, 5, CONVERT(DATETIME, '2020-08-19', 120), N'家中有老人，需留意电梯', CONVERT(DATETIME, '2020-08-19', 120)
+    UNION ALL SELECT 7, N'孙丽', N'女', N'13800000007', N'500382198752162672', 3, N'3栋2单元802', 143.80, 3, CONVERT(DATETIME, '2020-09-01', 120), NULL, CONVERT(DATETIME, '2020-09-01', 120)
+    UNION ALL SELECT 8, N'周杰', N'男', N'13800000008', N'500382198752165214', 4, N'4栋1单元1101', 98.20, 2, CONVERT(DATETIME, '2020-10-12', 120), NULL, CONVERT(DATETIME, '2020-10-12', 120)
+    UNION ALL SELECT 9, N'吴静', N'女', N'13800000009', N'500382198752161245', 4, N'4栋1单元1102', 126.50, 3, CONVERT(DATETIME, '2020-11-23', 120), NULL, CONVERT(DATETIME, '2020-11-23', 120)
+    UNION ALL SELECT 10, N'郑凯', N'男', N'13800000010', N'500382198752165762', 5, N'5栋1单元901', 143.80, 4, CONVERT(DATETIME, '2021-01-15', 120), NULL, CONVERT(DATETIME, '2021-01-15', 120)
+    UNION ALL SELECT 11, N'冯雪', N'女', N'13800000011', N'500382198752165687', 6, N'6栋1单元1503', 98.20, 2, CONVERT(DATETIME, '2021-03-06', 120), NULL, CONVERT(DATETIME, '2021-03-06', 120)
+    UNION ALL SELECT 12, N'韩磊', N'男', N'13800000012', N'500382198752166358', 6, N'6栋2单元1806', 126.50, 4, CONVERT(DATETIME, '2021-05-18', 120), NULL, CONVERT(DATETIME, '2021-05-18', 120)
+    UNION ALL SELECT 13, N'杨帆', N'男', N'13800000013', N'500382198752166327', 7, N'7栋1单元2201', 143.80, 3, CONVERT(DATETIME, '2021-07-29', 120), NULL, CONVERT(DATETIME, '2021-07-29', 120)
+    UNION ALL SELECT 14, N'许晴', N'女', N'13800000014', N'500382198752168652', 7, N'7栋3单元2402', 98.20, 1, CONVERT(DATETIME, '2021-09-09', 120), N'长期出差，报修请电话联系', CONVERT(DATETIME, '2021-09-09', 120)
+    UNION ALL SELECT 15, N'何军', N'男', N'13800000015', N'500382198752164537', 8, N'8栋1单元1201', 126.50, 4, CONVERT(DATETIME, '2021-11-11', 120), NULL, CONVERT(DATETIME, '2021-11-11', 120)
+    UNION ALL SELECT 16, N'邓丽', N'女', N'13800000016', N'500382198752165428', 8, N'8栋2单元1602', 143.80, 3, CONVERT(DATETIME, '2022-02-14', 120), NULL, CONVERT(DATETIME, '2022-02-14', 120);
 
     SET IDENTITY_INSERT dbo.tb_Household OFF;
     PRINT N'>> 已写入 tb_Household 演示数据（16 户）';
 END
 GO
 
-/* 5.4 车位 */
 IF NOT EXISTS (SELECT 1 FROM dbo.tb_Parking)
 BEGIN
     SET IDENTITY_INSERT dbo.tb_Parking ON;
@@ -436,20 +370,20 @@ BEGIN
     INSERT INTO dbo.tb_Parking
         (ParkId, ParkNo, ParkArea, ParkType, HouseholdId, CarNo, Status, RentFee, Remark, CreateTime)
     SELECT 1,  N'A-001', N'地下车库', N'地下', 1,    N'粤B12345', N'已售', 300.00, NULL, CONVERT(DATETIME, '2020-03-15', 120)
-    UNION ALL SELECT 2,  N'A-002', N'地下车库', N'地下', 2,    N'粤B23456', N'已租', 300.00, NULL, CONVERT(DATETIME, '2020-04-02', 120)
-    UNION ALL SELECT 3,  N'A-003', N'地下车库', N'地下', 3,    N'粤B34567', N'已租', 300.00, NULL, CONVERT(DATETIME, '2020-05-11', 120)
+    UNION ALL SELECT 2,  N'A-002', N'地下车库', N'地下', 2,    N'粤B00001', N'已租', 300.00, NULL, CONVERT(DATETIME, '2020-04-02', 120)
+    UNION ALL SELECT 3,  N'A-003', N'地下车库', N'地下', 3,    N'粤B00002', N'已租', 300.00, NULL, CONVERT(DATETIME, '2020-05-11', 120)
     UNION ALL SELECT 4,  N'A-004', N'地下车库', N'地下', NULL, NULL,        N'空闲', 300.00, N'车位照明待检查', CONVERT(DATETIME, '2020-03-15', 120)
-    UNION ALL SELECT 5,  N'A-005', N'地下车库', N'地下', 4,    N'粤B45678', N'已售', 300.00, NULL, CONVERT(DATETIME, '2020-06-20', 120)
-    UNION ALL SELECT 6,  N'A-006', N'地下车库', N'地下', 5,    N'粤B56789', N'已租', 300.00, NULL, CONVERT(DATETIME, '2020-07-08', 120)
+    UNION ALL SELECT 5,  N'A-005', N'地下车库', N'地下', 4,    N'粤B00003', N'已售', 300.00, NULL, CONVERT(DATETIME, '2020-06-20', 120)
+    UNION ALL SELECT 6,  N'A-006', N'地下车库', N'地下', 5,    N'粤B00004', N'已租', 300.00, NULL, CONVERT(DATETIME, '2020-07-08', 120)
     UNION ALL SELECT 7,  N'A-007', N'地下车库', N'地下', NULL, NULL,        N'空闲', 300.00, NULL, CONVERT(DATETIME, '2020-03-15', 120)
-    UNION ALL SELECT 8,  N'A-008', N'地下车库', N'地下', 6,    N'粤B67890', N'已租', 300.00, NULL, CONVERT(DATETIME, '2020-08-19', 120)
-    UNION ALL SELECT 9,  N'B-001', N'地面停车区', N'地上', 7,    N'粤B78901', N'已租', 150.00, NULL, CONVERT(DATETIME, '2020-09-01', 120)
-    UNION ALL SELECT 10, N'B-002', N'地面停车区', N'地上', 8,    N'粤B89012', N'已租', 150.00, NULL, CONVERT(DATETIME, '2020-10-12', 120)
+    UNION ALL SELECT 8,  N'A-008', N'地下车库', N'地下', 6,    N'粤B00005', N'已租', 300.00, NULL, CONVERT(DATETIME, '2020-08-19', 120)
+    UNION ALL SELECT 9,  N'B-001', N'地面停车区', N'地上', 7,    N'粤B00006', N'已租', 150.00, NULL, CONVERT(DATETIME, '2020-09-01', 120)
+    UNION ALL SELECT 10, N'B-002', N'地面停车区', N'地上', 8,    N'粤B00007', N'已租', 150.00, NULL, CONVERT(DATETIME, '2020-10-12', 120)
     UNION ALL SELECT 11, N'B-003', N'地面停车区', N'地上', NULL, NULL,        N'空闲', 150.00, NULL, CONVERT(DATETIME, '2020-03-15', 120)
-    UNION ALL SELECT 12, N'B-004', N'地面停车区', N'地上', 9,    N'粤B90123', N'已租', 150.00, NULL, CONVERT(DATETIME, '2020-11-23', 120)
-    UNION ALL SELECT 13, N'B-005', N'地面停车区', N'地上', 10,   N'粤B01234', N'已售', 150.00, NULL, CONVERT(DATETIME, '2021-01-15', 120)
+    UNION ALL SELECT 12, N'B-004', N'地面停车区', N'地上', 9,    N'粤B00008', N'已租', 150.00, NULL, CONVERT(DATETIME, '2020-11-23', 120)
+    UNION ALL SELECT 13, N'B-005', N'地面停车区', N'地上', 10,   N'粤B00009', N'已售', 150.00, NULL, CONVERT(DATETIME, '2021-01-15', 120)
     UNION ALL SELECT 14, N'B-006', N'地面停车区', N'地上', NULL, NULL,        N'空闲', 150.00, NULL, CONVERT(DATETIME, '2020-03-15', 120)
-    UNION ALL SELECT 15, N'B-007', N'地面停车区', N'地上', 11,   N'粤B13579', N'已租', 150.00, NULL, CONVERT(DATETIME, '2021-03-06', 120)
+    UNION ALL SELECT 15, N'B-007', N'地面停车区', N'地上', 11,   N'粤B00010', N'已租', 150.00, NULL, CONVERT(DATETIME, '2021-03-06', 120)
     UNION ALL SELECT 16, N'B-008', N'地面停车区', N'地上', NULL, NULL,        N'空闲', 150.00, NULL, CONVERT(DATETIME, '2020-03-15', 120);
 
     SET IDENTITY_INSERT dbo.tb_Parking OFF;
@@ -457,13 +391,6 @@ BEGIN
 END
 GO
 
-/* 5.5 系统用户
-   密码为 MD5 大写十六进制：
-       admin123        -> 0192023A7BBD73250516F069DF18B500
-       123456          -> E10ADC3949BA59ABBE56E057F20F883E
-   如需把某个账号密码重置为 123456，可直接执行：
-       UPDATE dbo.tb_SysUser SET Password = N'E10ADC3949BA59ABBE56E057F20F883E' WHERE LoginName = N'账号';
-*/
 IF NOT EXISTS (SELECT 1 FROM dbo.tb_SysUser)
 BEGIN
     SET IDENTITY_INSERT dbo.tb_SysUser ON;
@@ -485,7 +412,6 @@ BEGIN
 END
 GO
 
-/* 5.6 公告 */
 IF NOT EXISTS (SELECT 1 FROM dbo.tb_Notice)
 BEGIN
     SET IDENTITY_INSERT dbo.tb_Notice ON;
@@ -515,7 +441,6 @@ BEGIN
 END
 GO
 
-/* 5.7 报修工单 */
 IF NOT EXISTS (SELECT 1 FROM dbo.tb_Repair)
 BEGIN
     SET IDENTITY_INSERT dbo.tb_Repair ON;
@@ -540,7 +465,6 @@ BEGIN
 END
 GO
 
-/* 5.8 收费记录 */
 IF NOT EXISTS (SELECT 1 FROM dbo.tb_Fee)
 BEGIN
     SET IDENTITY_INSERT dbo.tb_Fee ON;
@@ -570,7 +494,6 @@ BEGIN
     UNION ALL SELECT 21, 14, N'物业费', N'2026-09', 176.76, N'已缴', CONVERT(DATETIME, '2026-09-18 14:05:00', 120), N'admin', NULL, CONVERT(DATETIME, '2026-09-01 08:00:00', 120)
     UNION ALL SELECT 22, 15, N'物业费', N'2026-09', 227.70, N'已缴', CONVERT(DATETIME, '2026-09-19 16:35:00', 120), N'admin', NULL, CONVERT(DATETIME, '2026-09-01 08:00:00', 120)
     UNION ALL SELECT 23, 16, N'物业费', N'2026-09', 258.84, N'未缴', NULL, NULL, NULL, CONVERT(DATETIME, '2026-09-01 08:00:00', 120)
-    /* 上一个月（2026-08）的历史数据，全部已缴 */
     UNION ALL SELECT 24, 1,  N'物业费', N'2026-08', 227.70, N'已缴', CONVERT(DATETIME, '2026-08-04 10:00:00', 120), N'admin', NULL, CONVERT(DATETIME, '2026-08-01 08:00:00', 120)
     UNION ALL SELECT 25, 2,  N'物业费', N'2026-08', 176.76, N'已缴', CONVERT(DATETIME, '2026-08-05 11:10:00', 120), N'admin', NULL, CONVERT(DATETIME, '2026-08-01 08:00:00', 120)
     UNION ALL SELECT 26, 3,  N'物业费', N'2026-08', 227.70, N'已缴', CONVERT(DATETIME, '2026-08-06 09:05:00', 120), N'admin', NULL, CONVERT(DATETIME, '2026-08-01 08:00:00', 120)
@@ -584,7 +507,6 @@ BEGIN
 END
 GO
 
-/* 5.9 投诉与建议 */
 IF NOT EXISTS (SELECT 1 FROM dbo.tb_Feedback)
 BEGIN
     SET IDENTITY_INSERT dbo.tb_Feedback ON;
@@ -621,7 +543,6 @@ BEGIN
 END
 GO
 
-/* 5.10 系统日志 */
 IF NOT EXISTS (SELECT 1 FROM dbo.tb_SysLog)
 BEGIN
     SET IDENTITY_INSERT dbo.tb_SysLog ON;
@@ -639,9 +560,6 @@ BEGIN
 END
 GO
 
-/*------------------------------------------------------------------------------
-  第 6 步：执行结果自检
-------------------------------------------------------------------------------*/
 PRINT N'';
 PRINT N'==================== 建库完成，数据统计 ====================';
 
@@ -655,9 +573,4 @@ UNION ALL SELECT N'tb_Repair',    COUNT(*) FROM dbo.tb_Repair
 UNION ALL SELECT N'tb_Fee',       COUNT(*) FROM dbo.tb_Fee
 UNION ALL SELECT N'tb_Feedback',  COUNT(*) FROM dbo.tb_Feedback
 UNION ALL SELECT N'tb_SysLog',    COUNT(*) FROM dbo.tb_SysLog;
-GO
-
-PRINT N'';
-PRINT N'登录账号：admin / admin123（管理员），13800000001 / 123456（业主）';
-PRINT N'接下来请在程序的 App.config 中把连接字符串改成你自己的实例地址。';
 GO
